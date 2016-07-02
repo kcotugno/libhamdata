@@ -41,35 +41,31 @@
 #define HAM_ERROR_DIR_TOO_LONG 103
 
 #define HAM_ERROR_SQLITE_CREATE_FILE 201
-#define HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION 202
-#define HAM_ERROR_SQLITE_CREATE_TABLES 203
-#define HAM_ERROR_SQLITE_INSERT_FAIL 204
-#define HAM_ERROR_SQLITE_BACKUP_FAIL 205
+#define HAM_ERROR_SQLITE_INIT 202
+#define HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION 203
+#define HAM_ERROR_SQLITE_CREATE_TABLES 204
+#define HAM_ERROR_SQLITE_INSERT 205
+#define HAM_ERROR_SQLITE_PREPARE_STMT 206
 
 /* Generic bool */
 #define HAM_BOOL_NO 0
 #define HAM_BOOL_YES 1
 
-/*
- * Max length the directory can be. This will be subtracted by 7 in the test so we know the file
- * name can be appended.
- */
-#define HAM_MAX_DIR_LENGTH 2048
-
 /* FCC Database structure */
 typedef struct ham_fcc_database ham_fcc_database;
+
+typedef struct ham_fcc_lengths ham_fcc_lengths;
 
 /*
  * Initializer and terminator.
  *
  * This should return HAM_OK. If a files fails to open, HAM_ERROR_OPEN_FILE is returned. Further,
- * no ham_fcc_database is allocated. In this case, do not call ham_fcc_terminate!
+ * no ham_fcc_database is allocated. In this case, you do not need to call ham_fcc_terminate.
  */
-LIBHAMDATA_API int ham_fcc_init_directory(ham_fcc_database **database, char *directory,
-                            const int include_optional);
+LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database, const int include_optional);
 LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database **database);
 
 /* Conversion functions */
-LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database, const int save_in_ram);
+LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database);
 
 #endif /* _LIBHANDATA_H_ */

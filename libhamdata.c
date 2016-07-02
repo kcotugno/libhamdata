@@ -20,22 +20,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#if defined(OS_WIN)
-    #define HAM_FILESYSTEM_SLASH "\\"
-#elif defined(OS_GENERIC)
-    #define HAM_FILESYSTEM_SLASH "/"
-#endif
-
 /* FCC row delimiter */
 #define HAM_DELIMITER "|"
 
 #define HAM_NULL_CHAR '\0'
 
 #define HAM_BUFFER_SIZE 4096
-
-#define HAM_FILESYSTEM_SLASH_LENGTH 1
-#define HAM_FCC_FILE_NAME_LENGTH 6
-#define HAM_SLASH_FCC_NAME_LENGTH 7
 
 #define HAM_FILE_CLOSED 0
 #define HAM_FILE_OPEN 1
@@ -62,6 +52,9 @@
 
 /* Default SQLite file name */
 #define HAM_SQLITE_FILE_NAME "fcchamdatabase.s3db"
+
+/* If you have the FCC file index, you can retrive the name from this array. */
+const static char *FCC_FILE_NAMES[9] = {"Unused", "AM", "EN", "HD", "HS", "CO", "LA", "SC", "SF"};
 
 const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE fcc_am(record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
@@ -169,7 +162,7 @@ const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE fcc_hs(record_type TE
                                                 "code TEXT);";
 
 
-// Optional FCC tables
+/* Optional FCC tables */
 const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE fcc_co(record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_num TEXT,"
@@ -211,180 +204,155 @@ const static char *HAM_SQLITE_TABLE_FCC_SF = "CREATE TABLE fcc_sf(record_type TE
                                                 "status_date DATETIME);";
 
 /* SQLite insert statements */
-const static char *HAM_SQLITE_INSERT_FCC_AM = "INSERT INTO fcc_am (record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_num,"
-                                                "ebf_number,"
-                                                "callsign,"
-                                                "operator_class,"
-                                                "group_code,"
-                                                "region_code,"
-                                                "trustee_callsign,"
-                                                "trustee_indicator,"
-                                                "physician_certification,"
-                                                "ve_signature,"
-                                                "systematic_callsign_change,"
-                                                "vanity_callsign_change,"
-                                                "vanity_relationship,"
-                                                "previous_callsign,"
-                                                "previous_operator_class,"
-                                                "trustee_name)";
+const static char *HAM_SQLITE_INSERT_FCC_AM = "INSERT INTO fcc_am VALUES (@rec_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_num,"
+                                                "@ebf_number,"
+                                                "@callsign,"
+                                                "@operator_class,"
+                                                "@group_code,"
+                                                "@region_code,"
+                                                "@trustee_callsign,"
+                                                "@trustee_indicator,"
+                                                "@physician_certification,"
+                                                "@ve_signature,"
+                                                "@systematic_callsign_change,"
+                                                "@vanity_callsign_change,"
+                                                "@vanity_relationship,"
+                                                "@previous_callsign,"
+                                                "@previous_operator_class,"
+                                                "@trustee_name)";
 
-const static char *HAM_SQLITE_INSERT_FCC_EN = "INSERT INTO fcc_en(record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_number,"
-                                                "ebf_number,"
-                                                "call_sign,"
-                                                "entity_type,"
-                                                "licensee_id,"
-                                                "entity_name,"
-                                                "first_name,"
-                                                "mi,"
-                                                "last_name,"
-                                                "suffix,"
-                                                "phone,"
-                                                "fax,"
-                                                "email,"
-                                                "street_address,"
-                                                "city,"
-                                                "state,"
-                                                "zip_code,"
-                                                "po_box,"
-                                                "attention_line,"
-                                                "sgin,"
-                                                "frn,"
-                                                "applicant_type_code,"
-                                                "applicant_type_other,"
-                                                "status_code,"
-                                                "status_date)";
+const static char *HAM_SQLITE_INSERT_FCC_EN = "INSERT INTO fcc_en VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_number,"
+                                                "@ebf_number,"
+                                                "@call_sign,"
+                                                "@entity_type,"
+                                                "@licensee_id,"
+                                                "@entity_name,"
+                                                "@first_name,"
+                                                "@mi,"
+                                                "@last_name,"
+                                                "@suffix,"
+                                                "@phone,"
+                                                "@fax,"
+                                                "@email,"
+                                                "@street_address,"
+                                                "@city,"
+                                                "@state,"
+                                                "@zip_code,"
+                                                "@po_box,"
+                                                "@attention_line,"
+                                                "@sgin,"
+                                                "@frn,"
+                                                "@applicant_type_code,"
+                                                "@applicant_type_other,"
+                                                "@status_code,"
+                                                "@status_date)";
 
-const static char *HAM_SQLITE_INSERT_FCC_HD = "INSERT INTO fcc_hd(record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_number,"
-                                                "ebf_number,"
-                                                "call_sign,"
-                                                "license_status,"
-                                                "radio_service_code,"
-                                                "grant_date,"
-                                                "expired_date,"
-                                                "cancellation_date,"
-                                                "eligibility_rule_num,"
-                                                "applicant_type_code_reserved,"
-                                                "alien,"
-                                                "alien_government,"
-                                                "alien_corporation,"
-                                                "alien_officer,"
-                                                "alien_control,"
-                                                "revoked,"
-                                                "convicted,"
-                                                "adjudged,"
-                                                "involved_reserved,"
-                                                "common_carrier,"
-                                                "non_common_carrier,"
-                                                "private_comm,"
-                                                "fixed,"
-                                                "mobile,"
-                                                "radiolocation,"
-                                                "satellite,"
-                                                "developmental_or_sta,"
-                                                "interconnected_service,"
-                                                "certifier_first_name,"
-                                                "certifier_mi,"
-                                                "certifier_last_name,"
-                                                "certifier_suffix,"
-                                                "certifier_title,"
-                                                "gender,"
-                                                "african_american,"
-                                                "native_american,"
-                                                "hawaiian,"
-                                                "asian,"
-                                                "white,"
-                                                "ethnicity,"
-                                                "effective_date,"
-                                                "last_action_date,"
-                                                "auction_id,"
-                                                "reg_stat_broad_serv,"
-                                                "band_manager,"
-                                                "type_serv_broad_serv,"
-                                                "alien_ruling,"
-                                                "licensee_name_change)";
+const static char *HAM_SQLITE_INSERT_FCC_HD = "INSERT INTO fcc_hd VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_number,"
+                                                "@ebf_number,"
+                                                "@call_sign,"
+                                                "@license_status,"
+                                                "@grant_date,"
+                                                "@radio_service_code,"
+                                                "@expired_date,"
+                                                "@cancellation_date,"
+                                                "@eligibility_rule_num,"
+                                                "@applicant_type_code_reserved,"
+                                                "@alien,"
+                                                "@alien_government,"
+                                                "@alien_corporation,"
+                                                "@alien_officer,"
+                                                "@revoked,"
+                                                "@alien_control,"
+                                                "@convicted,"
+                                                "@adjudged,"
+                                                "@involved_reserved,"
+                                                "@common_carrier,"
+                                                "@non_common_carrier,"
+                                                "@private_comm,"
+                                                "@fixed,"
+                                                "@mobile,"
+                                                "@radiolocation,"
+                                                "@satellite,"
+                                                "@developmental_or_sta,"
+                                                "@interconnected_service,"
+                                                "@certifier_first_name,"
+                                                "@certifier_mi,"
+                                                "@certifier_last_name,"
+                                                "@certifier_suffix,"
+                                                "@certifier_title,"
+                                                "@gender,"
+                                                "@african_american,"
+                                                "@native_american,"
+                                                "@hawaiian,"
+                                                "@asian,"
+                                                "@white,"
+                                                "@ethnicity,"
+                                                "@effective_date,"
+                                                "@last_action_date,"
+                                                "@auction_id,"
+                                                "@reg_stat_broad_serv,"
+                                                "@band_manager,"
+                                                "@type_serv_broad_serv,"
+                                                "@alien_ruling,"
+                                                "@licensee_name_change)";
 
-const static char *HAM_SQLITE_INSERT_FCC_HS = "INSERT INTO fcc_hs(record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_number,"
-                                                "callsign,"
-                                                "log_date,"
-                                                "code)";
+const static char *HAM_SQLITE_INSERT_FCC_HS = "INSERT INTO fcc_hs VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_number,"
+                                                "@callsign,"
+                                                "@log_date,"
+                                                "@code)";
 
 
-// Optional FCC file sqlite inserts
-const static char *HAM_SQLITE_INSERT_FCC_CO = "INSERT INTO fcc_co(record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_num,"
-                                                "callsign,"
-                                                "comment_date,"
-                                                "description,"
-                                                "status_code,"
-                                                "status_date)";
+/* Optional FCC file sqlite inserts */
+const static char *HAM_SQLITE_INSERT_FCC_CO = "INSERT INTO fcc_co VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_num,"
+                                                "@callsign,"
+                                                "@description,"
+                                                "@comment_date,"
+                                                "@status_code,"
+                                                "@status_date)";
 
-const static char *HAM_SQLITE_INSERT_FCC_LA = "INSERT INTO fcc_la(record_type,"
-                                                "unique_system_identifier,"
-                                                "callsign,"
-                                                "attachment_code,"
-                                                "attachment_desc,"
-                                                "attachment_date,"
-                                                "attachment_filename,"
-                                                "action_performed)";
+const static char *HAM_SQLITE_INSERT_FCC_LA = "INSERT INTO fcc_la VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@callsign,"
+                                                "@attachment_code,"
+                                                "@attachment_desc,"
+                                                "@attachment_date,"
+                                                "@attachment_filename,"
+                                                "@action_performed)";
 
-const static char *HAM_SQLITE_INSERT_FCC_SC = "INSERT INTO fcc_sc(record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_number,"
-                                                "ebf_number,"
-                                                "callsign,"
-                                                "special_condition_type,"
-                                                "special_condition_code,"
-                                                "status_code,"
-                                                "status_date)";
+const static char *HAM_SQLITE_INSERT_FCC_SC = "INSERT INTO fcc_sc VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_number,"
+                                                "@ebf_number,"
+                                                "@callsign,"
+                                                "@special_condition_type,"
+                                                "@special_condition_code,"
+                                                "@status_code,"
+                                                "@status_date)";
 
-const static char *HAM_SQLITE_INSERT_FCC_SF = "INSERT INTO fcc_sf(record_type,"
-                                                "unique_system_identifier,"
-                                                "uls_file_number,"
-                                                "ebf_number,"
-                                                "callsign,"
-                                                "lic_freeform_cond_type,"
-                                                "unique_lic_freeform_id,"
-                                                "sequence_number,"
-                                                "lic_freeform_condition,"
-                                                "status_code,"
-                                                "status_date)";
-
-const static char *HAM_SQLITE_INSERT_VALUES = "VALUES(";
-const static char HAM_SQLITE_INSERT_VALUES_CLOSE = ')';
-
-/* Internal function prototypes */
-char *ham_cat_dir_name(char *path, const char *directory, const char *name);
-int ham_alloc_string_array(char ***array, const int num_fields, const int num_char);
-int ham_free_string_array(char ***array, const int num_fields, const int num_char);
-int ham_parse_line_with_delimiter(char **fields, const char *line, const int num_fields,
-                                const char *delimiter);
-INT64 ham_get_lines_in_file(FILE *file);
-
-/* Internal FCC file function prototypes */
-int ham_fcc_files_exist(char *directory, const int include_optional);
-void ham_fcc_close_all(ham_fcc_database *database);
-
-/* Internal SQLite function prototypes */
-int ham_sqlite_create_file(const char *path);
-int ham_sqlite_open_database_connection(sqlite3 **db, char *path);
-int ham_sqlite_save_ram_database(sqlite3 *ram_db, sqlite3 *backup_db);
-int ham_sqlite_create_tables(sqlite3 *db, const ham_fcc_database *fcc_database, char *errmsg);
-int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int fcc_file);
-int ham_sqlite_insert_fields(sqlite3 *db, char *errmsg, char **fields, const int num_fields,
-                            const int fcc_file);
-int ham_sqlite_strip_sql_ctr(char *buffer);
+const static char *HAM_SQLITE_INSERT_FCC_SF = "INSERT INTO fcc_sf VALUES (@record_type,"
+                                                "@unique_system_identifier,"
+                                                "@uls_file_number,"
+                                                "@ebf_number,"
+                                                "@callsign,"
+                                                "@lic_freeform_cond_type,"
+                                                "@unique_lic_freeform_id,"
+                                                "@sequence_number,"
+                                                "@lic_freeform_condition,"
+                                                "@status_code,"
+                                                "@status_date)";
 
 /* FCC database structure */
-typedef struct ham_fcc_database {
+struct ham_fcc_database {
     char *directory;
 
     /* Necessary files */
@@ -411,6 +379,11 @@ typedef struct ham_fcc_database {
     int sf_open;
 
     /* Holds the number of lines in the files */
+    ham_fcc_lengths *fcc_lengths;
+};
+
+/* FCC database file lengths */
+struct ham_fcc_lengths {
     INT64 am_length;
     INT64 en_length;
     INT64 hd_length;
@@ -419,20 +392,47 @@ typedef struct ham_fcc_database {
     INT64 la_length;
     INT64 sc_length;
     INT64 sf_length;
-} ham_fcc_database;
+};
 
-/* Join the fcc database directory and file name */
-char *ham_cat_dir_name(char *path, const char *directory, const char *name) {
-    if(strlen(directory) == 0) {
-        strncpy(path, name, strlen(name));
-        return path;
-    }
-    strncat(path, directory, strlen(directory));
-    strncat(path, HAM_FILESYSTEM_SLASH, HAM_FILESYSTEM_SLASH_LENGTH);
-    strncat(path, name, HAM_FCC_FILE_NAME_LENGTH);
+typedef struct ham_fcc_sqlite {
+    sqlite3 *database;
+    char *sql_errmsg;
 
-    return path;
-}
+    sqlite3_stmt *am_stmt;
+    sqlite3_stmt *en_stmt;
+    sqlite3_stmt *hd_stmt;
+    sqlite3_stmt *hs_stmt;
+    sqlite3_stmt *co_stmt;
+    sqlite3_stmt *la_stmt;
+    sqlite3_stmt *sc_stmt;
+    sqlite3_stmt *sf_stmt;
+
+    int include_optional;
+
+    unsigned int sql_insert_calls;
+} ham_fcc_sqlite;
+
+/* Internal function prototypes */
+int ham_alloc_string_array(char ***array, const int num_fields, const int num_char);
+int ham_free_string_array(char ***array, const int num_fields, const int num_char);
+int ham_parse_line_with_delimiter(char **fields, const char *line, const int num_fields,
+                                    const char *delimiter);
+INT64 ham_get_lines_in_file(FILE *file);
+
+/* Internal FCC file function prototypes */
+int ham_fcc_files_exist(char *directory, const int include_optional);
+void ham_fcc_close_all(ham_fcc_database *database);
+
+/* Internal SQLite function prototypes */
+int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite, const int include_optional);
+int ham_sqlite_terminate(ham_fcc_sqlite *fcc_sqlite);
+int ham_sqlite_sql_prepare_stmt(ham_fcc_sqlite *fcc_sqlite);
+int ham_sqlite_create_file(const char *filename);
+int ham_sqlite_open_database_connection(sqlite3 **db, const char *filename);
+int ham_sqlite_create_tables(ham_fcc_sqlite *fcc_sqlite);
+int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const int fcc_file);
+int ham_sqlite_insert_fields(ham_fcc_sqlite *fcc_sqlite, char **fields, const int num_fields,
+                                sqlite3_stmt *sql_stmt, const int fcc_file);
 
 /*
  * Handles the memory allocation of the array of char arrays for holding the fields in the FCC
@@ -479,7 +479,7 @@ int ham_free_string_array(char ***array, const int num_fields, const num_char) {
 int ham_parse_line_with_delimiter(char **fields, const char *line, const int num_fields,
                                 const char *delimiter) {
     const char *begin, *end;
-    char buffer[HAM_BUFFER_SIZE], buffer2[HAM_BUFFER_SIZE];
+    char buffer[HAM_BUFFER_SIZE];
     int field = 0, ctr = 0;
 
     /* The fields must be reset or the unwanted data will be appended to many fields */
@@ -502,39 +502,18 @@ int ham_parse_line_with_delimiter(char **fields, const char *line, const int num
             begin = end + 1;
         }
 
-        /*
-         * We are adding the "'FIELD'," formatting for sqlite so we don't have to loop through all
-         * the data again later. If down the road some other format is added with which we don't
-         * want it pre-formatted, we can change.
-         */
-        if(strlen(buffer) != 0) {
-            memset(buffer2, HAM_NULL_CHAR, sizeof(char) * HAM_BUFFER_SIZE);
-            ham_sqlite_strip_sql_ctr(buffer);
-
-            memset(buffer2, '\'', 1);
-            strncpy(&buffer2[1], buffer, strlen(buffer));
-            strncat(buffer2, "\',", strlen("\',"));
-            strncpy(fields[field], buffer2, strlen(buffer2));
-        }
+        if(strlen(buffer) == 0)
+            fields[field][0] = '\0';
         else
-            strncpy(fields[field], "null,", strlen("null,"));
+            strncpy(fields[field], buffer, strlen(buffer));
 
-        /* Again, we pre-formatted for sqlite */
-        if (field == (num_fields - 1))
-            memset(strrchr(fields[field], ','), HAM_SQLITE_INSERT_VALUES_CLOSE, 1);
-
-/*         printf("Begin: %p\n", begin);
+        /*printf("Begin: %p\n", begin);
         printf("End: %p\n", end);
         printf("Token: %s\n", fields[field]);
-        printf("Length: %zd\n\n", strlen(buffer)); */
+        printf("Length: %zd\n\n", strlen(buffer));*/
         field++;
     }
 
-    return HAM_OK;
-}
-
-int ham_fcc_files_exist(char *directory, const int include_optional) {
-    /* TODO: Implement */
     return HAM_OK;
 }
 
@@ -602,18 +581,16 @@ void ham_fcc_close_all(ham_fcc_database *database) {
 
 }
 
-LIBHAMDATA_API int ham_fcc_init_directory(ham_fcc_database **database, char *directory,
-                            const int include_optional) {
-    if (strlen(directory) > (HAM_MAX_DIR_LENGTH - HAM_SLASH_FCC_NAME_LENGTH))
-        return HAM_ERROR_DIR_TOO_LONG;
-
-    char path[HAM_MAX_DIR_LENGTH] = "";
-
-    /* For now we'll assume all the files exist */
-    /* TODO check files exist */
-    *database = malloc(sizeof(ham_fcc_database));
-    if(*database == NULL)
+LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database, const int include_optional) {
+    (*database) = malloc(sizeof(ham_fcc_database));
+    if((*database) == NULL)
         return HAM_ERROR_MALLOC_FAIL;
+
+    (*database)->fcc_lengths = malloc(sizeof(ham_fcc_lengths));
+    if((*database)->fcc_lengths == NULL) {
+        free(*database);
+        return HAM_ERROR_MALLOC_FAIL;
+    }
 
     /* Default to not include optional files */
     (*database)->include_optional = include_optional;
@@ -629,81 +606,78 @@ LIBHAMDATA_API int ham_fcc_init_directory(ham_fcc_database **database, char *dir
     (*database)->sf_open = HAM_FILE_CLOSED;
 
     /* Open all FCC files */
-    (*database)->am = fopen(ham_cat_dir_name(path, directory, "am.dat"), "r");
+    (*database)->am = fopen("am.dat", "r");
     assert((*database)->am != NULL);
     if((*database)->am == NULL) {
         ham_fcc_terminate(database);
         return HAM_ERROR_OPEN_FILE;
     }
     (*database)->am_open = HAM_FILE_OPEN;
-    (*database)->am_length = ham_get_lines_in_file((*database)->am);
+    (*database)->fcc_lengths->am_length = ham_get_lines_in_file((*database)->am);
 
-    (*database)->en = fopen(ham_cat_dir_name(path, directory, "en.dat"), "r");
+    (*database)->en = fopen("en.dat", "r");
     assert((*database)->en != NULL);
     if((*database)->en == NULL) {
         ham_fcc_terminate(database);
         return HAM_ERROR_OPEN_FILE;
     }
     (*database)->en_open = HAM_FILE_OPEN;
-    (*database)->en_length = ham_get_lines_in_file((*database)->en);
+    (*database)->fcc_lengths->en_length = ham_get_lines_in_file((*database)->en);
 
-    (*database)->hd = fopen(ham_cat_dir_name(path, directory, "hd.dat"), "r");
+    (*database)->hd = fopen("hd.dat", "r");
     assert((*database)->hd != NULL);
     if((*database)->hd == NULL) {
         ham_fcc_terminate(database);
         return HAM_ERROR_OPEN_FILE;
     }
     (*database)->hd_open = HAM_FILE_OPEN;
-    (*database)->hd_length = ham_get_lines_in_file((*database)->hd);
+    (*database)->fcc_lengths->hd_length = ham_get_lines_in_file((*database)->hd);
 
-    (*database)->hs = fopen(ham_cat_dir_name(path, directory, "hs.dat"), "r");
+    (*database)->hs = fopen("hs.dat", "r");
     assert((*database)->hs != NULL);
     if((*database)->hs == NULL) {
         ham_fcc_terminate(database);
         return HAM_ERROR_OPEN_FILE;
     }
     (*database)->hs_open = HAM_FILE_OPEN;
-    (*database)->hs_length = ham_get_lines_in_file((*database)->hs);
+    (*database)->fcc_lengths->hs_length = ham_get_lines_in_file((*database)->hs);
 
     /* Optional files */
     if(include_optional) {
 
-        (*database)->co = fopen(ham_cat_dir_name(path, directory, "co.dat"), "r");
+        (*database)->co = fopen("co.dat", "r");
         if((*database)->co == NULL) {
             ham_fcc_terminate(database);
             return HAM_ERROR_OPEN_FILE;
         }
         (*database)->co_open = HAM_FILE_OPEN;
-        (*database)->co_length = ham_get_lines_in_file((*database)->co);
+        (*database)->fcc_lengths->co_length = ham_get_lines_in_file((*database)->co);
 
-        (*database)->la = fopen(ham_cat_dir_name(path, directory, "la.dat"), "r");
+        (*database)->la = fopen("la.dat", "r");
         if((*database)->la == NULL) {
             ham_fcc_terminate(database);
             return HAM_ERROR_OPEN_FILE;
         }
         (*database)->la_open = HAM_FILE_OPEN;
-        (*database)->la_length = ham_get_lines_in_file((*database)->la);
+        (*database)->fcc_lengths->la_length = ham_get_lines_in_file((*database)->la);
 
-        (*database)->sc = fopen(ham_cat_dir_name(path, directory, "sc.dat"), "r");
+        (*database)->sc = fopen("sc.dat", "r");
         if((*database)->sc == NULL) {
             ham_fcc_terminate(database);
             return HAM_ERROR_OPEN_FILE;
         }
         (*database)->sc_open = HAM_FILE_OPEN;
-        (*database)->sc_length = ham_get_lines_in_file((*database)->sc);
+        (*database)->fcc_lengths->sc_length = ham_get_lines_in_file((*database)->sc);
 
-        (*database)->sf = fopen(ham_cat_dir_name(path, directory, "sf.dat"), "r");
+        (*database)->sf = fopen("sf.dat", "r");
         if((*database)->sf == NULL) {
             ham_fcc_terminate(database);
             return HAM_ERROR_OPEN_FILE;
         }
         (*database)->sf_open = HAM_FILE_OPEN;
-        (*database)->sf_length = ham_get_lines_in_file((*database)->sf);
+        (*database)->fcc_lengths->sf_length = ham_get_lines_in_file((*database)->sf);
     }
 
-
-    /* printf("%I64d\n%I64d\n%I64d\n%I64d\n", (*database)->am_length,(*database)->en_length,
-                (*database)->hd_length,(*database)->hs_length); */
     return HAM_OK;
 }
 
@@ -714,6 +688,7 @@ LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database **database) {
 
     ham_fcc_close_all(*database);
 
+    free((*database)->fcc_lengths);
     free(*database);
     *database = NULL;
     return HAM_OK;
@@ -724,59 +699,124 @@ LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database **database) {
  *
  * If HAM_SQLITE_FILE_NAME already exists, it will be overwritten.
  */
-LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database, const int save_in_ram) {
+LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database) {
 
     /*
-     * These variable will be used throughout the conversion * process, being passed to multiple
-     * sub-functions. If save_in_ram is false, just ram_db is used.
+     * This variable contains all the data need for the conversion process. It is passed to multiple
+     * sub-functions.
      */
-    sqlite3 *ram_db, *db;
-    /* char *errmsg = NULL; */
-
-    char *path;
-    if(save_in_ram)
-        path = ":memory:";
-    else
-        path = HAM_SQLITE_FILE_NAME;
+    ham_fcc_sqlite *fcc_sqlite;
 
     /* Conversion preparations */
     if(ham_sqlite_create_file(HAM_SQLITE_FILE_NAME))
         return HAM_ERROR_SQLITE_CREATE_FILE;
 
-    if(ham_sqlite_open_database_connection(&ram_db, path))
-        return HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION;
+    if(ham_sqlite_init(&fcc_sqlite, fcc_database->include_optional))
+        return HAM_ERROR_SQLITE_INIT;
 
-    if(ham_sqlite_create_tables(ram_db, fcc_database, NULL))
+    if(ham_sqlite_create_tables(fcc_sqlite))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
+    if(ham_sqlite_sql_prepare_stmt(fcc_sqlite))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
+
     /* Perform the conversion */
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->am, HAM_FCC_FILE_AM);
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->en, HAM_FCC_FILE_EN);
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->hd, HAM_FCC_FILE_HD);
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->hs, HAM_FCC_FILE_HS);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->am, HAM_FCC_FILE_AM);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->en, HAM_FCC_FILE_EN);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->hd, HAM_FCC_FILE_HD);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->hs, HAM_FCC_FILE_HS);
 
     if(fcc_database->include_optional == HAM_BOOL_YES) {
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->co, HAM_FCC_FILE_CO);
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->la, HAM_FCC_FILE_LA);
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->sc, HAM_FCC_FILE_SC);
-    ham_sqlite_fcc_convert_file(ram_db, NULL, fcc_database->sf, HAM_FCC_FILE_SF);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->co, HAM_FCC_FILE_CO);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->la, HAM_FCC_FILE_LA);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->sc, HAM_FCC_FILE_SC);
+    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->sf, HAM_FCC_FILE_SF);
     }
 
-    if(save_in_ram) {
-        if(ham_sqlite_open_database_connection(&db, HAM_SQLITE_FILE_NAME))
-            return HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION;
+    printf("SQL insert calls: %u\n", fcc_sqlite->sql_insert_calls);
 
-        if(ham_sqlite_save_ram_database(ram_db, db))
-            return HAM_ERROR_SQLITE_BACKUP_FAIL;
-    }
+    ham_sqlite_terminate(fcc_sqlite);
 
     return HAM_OK;
 }
 
+int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite, const int include_optional) {
+
+    (*fcc_sqlite) = malloc(sizeof(ham_fcc_sqlite));
+    if((*fcc_sqlite) == NULL)
+        return HAM_ERROR_SQLITE_INIT;
+
+    if(ham_sqlite_open_database_connection(&(*fcc_sqlite)->database, HAM_SQLITE_FILE_NAME)) {
+        free((*fcc_sqlite));
+
+        return HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION;
+    }
+
+    (*fcc_sqlite)->include_optional = include_optional;
+    (*fcc_sqlite)->sql_insert_calls = 0;
+
+    sqlite3_exec((*fcc_sqlite)->database, "PRAGMA syncronous = OFF", NULL, NULL, NULL);
+    sqlite3_exec((*fcc_sqlite)->database, "PRAGMA journal_mode = MEMORY", NULL, NULL, NULL);
+
+    sqlite3_exec((*fcc_sqlite)->database, "BEGIN TRANSACTION", NULL, NULL, NULL);
+
+    return HAM_OK;
+}
+
+int ham_sqlite_terminate(ham_fcc_sqlite *fcc_sqlite) {
+    /* Can be safely called if already freed. */
+    if(fcc_sqlite == NULL)
+        return HAM_OK;
+
+    sqlite3_exec(fcc_sqlite->database, "END TRANSACTION", NULL, NULL, NULL);
+
+    free(fcc_sqlite->database);
+
+    free(fcc_sqlite);
+    return HAM_OK;
+}
+
+int ham_sqlite_sql_prepare_stmt(ham_fcc_sqlite *fcc_sqlite) {
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_AM, HAM_BUFFER_SIZE,
+                            &fcc_sqlite->am_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_EN, HAM_BUFFER_SIZE,
+                            &fcc_sqlite->en_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_HD, HAM_BUFFER_SIZE,
+                            &fcc_sqlite->hd_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_HS, HAM_BUFFER_SIZE,
+                            &fcc_sqlite->hs_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+    if(fcc_sqlite->include_optional == HAM_BOOL_YES) {
+        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_CO, HAM_BUFFER_SIZE,
+                                &fcc_sqlite->co_stmt, NULL))
+            return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_LA, HAM_BUFFER_SIZE,
+                                &fcc_sqlite->la_stmt, NULL))
+            return HAM_ERROR_SQLITE_PREPARE_STMT;
+        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_SC, HAM_BUFFER_SIZE,
+                                &fcc_sqlite->sc_stmt, NULL))
+            return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_SF, HAM_BUFFER_SIZE,
+                                &fcc_sqlite->sf_stmt, NULL))
+            return HAM_ERROR_SQLITE_PREPARE_STMT;
+    }
+
+    return HAM_OK;
+
+}
 
 /* Creates the HAM_SQLITE_FILE_NAME. If it already exists, reset it. */
-int ham_sqlite_create_file(const char *path) {
-    FILE *f = fopen(path, "w");
+int ham_sqlite_create_file(const char *filename) {
+    FILE *f = fopen(filename, "w");
 
     if(f == NULL)
         return HAM_ERROR_SQLITE_CREATE_FILE;
@@ -786,66 +826,54 @@ int ham_sqlite_create_file(const char *path) {
     return HAM_OK;
 }
 
-int ham_sqlite_open_database_connection(sqlite3 **db, char *path) {
-    if(sqlite3_open(path, db)) {
-        fprintf(stderr, "Unable to open database: %s\n", sqlite3_errmsg(*db));
-        sqlite3_close(*db);
+int ham_sqlite_open_database_connection(sqlite3 **database, const char *filename) {
+    if(sqlite3_open(filename, database)) {
+        fprintf(stderr, "Error: unable to open database: %s\n", sqlite3_errmsg(*database));
+
+        sqlite3_close(*database);
         return HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION;
     }
 
     return HAM_OK;
 }
 
-int ham_sqlite_save_ram_database(sqlite3 *ram_db, sqlite3 *backup_db) {
-    sqlite3_backup *backup;
-    backup = sqlite3_backup_init(backup_db, "main", ram_db, "main");
-    if(backup) {
-        if(sqlite3_backup_step(backup, -1) != SQLITE_DONE) {
-            fprintf(stderr, "Error: failed to backup database\n");
-            return HAM_ERROR_SQLITE_BACKUP_FAIL;
-        }
+int ham_sqlite_create_tables(ham_fcc_sqlite *fcc_sqlite) {
 
-        sqlite3_backup_finish(backup);
-    }
-
-    return HAM_OK;
-}
-
-int ham_sqlite_create_tables(sqlite3 *db, const ham_fcc_database *fcc_database, char *errmsg) {
-    if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_AM, NULL, NULL, &errmsg))
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_AM, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-    if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_EN, NULL, NULL, &errmsg))
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_EN, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-    if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_HD, NULL, NULL, &errmsg))
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_HD, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-    if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_HS, NULL, NULL, &errmsg))
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_HS, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
     /* Include optional files */
-    if(fcc_database->include_optional) {
-        if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_CO, NULL, NULL, &errmsg))
+    if(fcc_sqlite->include_optional == HAM_BOOL_YES) {
+        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_CO, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-        if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_LA, NULL, NULL, &errmsg))
+        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_LA, NULL, NULL, NULL))
             return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-        if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_SC, NULL, NULL, &errmsg))
+        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_SC, NULL, NULL, NULL))
             return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-        if(sqlite3_exec(db, HAM_SQLITE_TABLE_FCC_SF, NULL, NULL, &errmsg))
+        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_SF, NULL, NULL, NULL))
             return HAM_ERROR_SQLITE_CREATE_TABLES;
     }
 
     return HAM_OK;
 }
 
-int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int fcc_file) {
-    char buffer[HAM_BUFFER_SIZE] = "";
+int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const int fcc_file) {
+    char buffer[HAM_BUFFER_SIZE];
     int error = HAM_OK;
     int num_fields = 0;
+    sqlite3_stmt *sql_stmt = NULL;
     char **fields;
 
     switch (fcc_file) {
@@ -855,6 +883,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_AM_FIELDS;
+            sql_stmt = fcc_sqlite->am_stmt;
             break;
 
         case HAM_FCC_FILE_EN:
@@ -863,6 +892,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_EN_FIELDS;
+            sql_stmt = fcc_sqlite->en_stmt;
             break;
 
         case HAM_FCC_FILE_HD:
@@ -871,6 +901,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_HD_FIELDS;
+            sql_stmt = fcc_sqlite->hd_stmt;
             break;
 
         case HAM_FCC_FILE_HS:
@@ -879,6 +910,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_HS_FIELDS;
+            sql_stmt = fcc_sqlite->hs_stmt;
             break;
 
         case HAM_FCC_FILE_CO:
@@ -887,6 +919,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_CO_FIELDS;
+            sql_stmt = fcc_sqlite->co_stmt;
             break;
 
         case HAM_FCC_FILE_LA:
@@ -895,6 +928,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_LA_FIELDS;
+            sql_stmt = fcc_sqlite->la_stmt;
             break;
 
         case HAM_FCC_FILE_SC:
@@ -903,6 +937,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
             if(error != HAM_OK)
                 return HAM_ERROR_MALLOC_FAIL;
             num_fields = HAM_FCC_SC_FIELDS;
+            sql_stmt = fcc_sqlite->sc_stmt;
             break;
 
         case HAM_FCC_FILE_SF:
@@ -911,6 +946,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
                 return HAM_ERROR_MALLOC_FAIL;
 
             num_fields = HAM_FCC_SF_FIELDS;
+            sql_stmt = fcc_sqlite->sf_stmt;
             break;
 
         default:
@@ -933,7 +969,7 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
             return HAM_ERROR_GENERIC;
         }
 
-        ham_sqlite_insert_fields(db, errmsg, fields, num_fields, fcc_file);
+        ham_sqlite_insert_fields(fcc_sqlite, fields, num_fields, sql_stmt, fcc_file);
 
         memset(buffer, HAM_NULL_CHAR, HAM_BUFFER_SIZE);
     }
@@ -942,81 +978,41 @@ int ham_sqlite_fcc_convert_file(sqlite3 *db, char *errmsg, FILE *data, const int
 
     return error;
 }
-int ham_sqlite_insert_fields(sqlite3 *db, char *errmsg, char **fields, const int num_fields,
-                            const int fcc_file) {
-    char sql[HAM_BUFFER_SIZE];
 
-    switch (fcc_file) {
-        case HAM_FCC_FILE_AM:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_AM, strlen(HAM_SQLITE_INSERT_FCC_AM));
-            break;
+int ham_sqlite_insert_fields(ham_fcc_sqlite *fcc_sqlite, char **fields, const int num_fields,
+                                sqlite3_stmt *sql_stmt, const int fcc_file) {
 
-        case HAM_FCC_FILE_EN:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_EN, strlen(HAM_SQLITE_INSERT_FCC_EN));
-            break;
+    int rc = 0;
 
-        case HAM_FCC_FILE_HD:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_HD, strlen(HAM_SQLITE_INSERT_FCC_HD));
-            break;
+    for(int i = 0; i < num_fields; i++) {
 
-        case HAM_FCC_FILE_HS:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_HS, strlen(HAM_SQLITE_INSERT_FCC_HS));
-            break;
+        if(strlen(fields[i]) == 0)
+            rc = sqlite3_bind_null(sql_stmt, i+1);
+        else
+            rc = sqlite3_bind_text(sql_stmt, i+1, fields[i], -1, SQLITE_TRANSIENT);
 
-        case HAM_FCC_FILE_CO:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_CO, strlen(HAM_SQLITE_INSERT_FCC_CO));
-            break;
+        if(rc != SQLITE_OK) {
+            fprintf(stderr, "Error (%d): paramater binding failed. * %s * %d * %s *\n", rc,
+                        FCC_FILE_NAMES[fcc_file], i, fields[i]);
 
-        case HAM_FCC_FILE_LA:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_LA, strlen(HAM_SQLITE_INSERT_FCC_LA));
-            break;
-
-        case HAM_FCC_FILE_SC:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_SC, strlen(HAM_SQLITE_INSERT_FCC_SC));
-            break;
-
-        case HAM_FCC_FILE_SF:
-            strncpy(sql, HAM_SQLITE_INSERT_FCC_SF, strlen(HAM_SQLITE_INSERT_FCC_SF));
-            break;
-
-        default:
             return HAM_ERROR_GENERIC;
+        }
     }
 
-    strncat(sql, HAM_SQLITE_INSERT_VALUES, strlen(HAM_SQLITE_INSERT_VALUES));
+        rc = sqlite3_step(sql_stmt);
 
-    for(int i = 0; i < num_fields; i++)
-        strncat(sql, fields[i], strlen(fields[i]));
+        sqlite3_clear_bindings(sql_stmt);
+        sqlite3_reset(sql_stmt);
 
-    if(sqlite3_exec(db, sql, NULL, NULL, &errmsg)) {
-        fprintf(stderr, "Unable to insert data: %s\n", sqlite3_errmsg(db));
-        fprintf(stderr, "%s\n\n", sql);
-        return HAM_ERROR_SQLITE_INSERT_FAIL;
-    }
+        if(rc != SQLITE_DONE)
+        {
+            fprintf(stderr, "Error (%d): failed to insert record. * %s * %s * %s *\n", rc,
+                        FCC_FILE_NAMES[fcc_file], fields[2], fields[3]);
 
-    return HAM_OK;
-}
+            return HAM_ERROR_SQLITE_INSERT;
+        }
 
-int ham_sqlite_strip_sql_ctr(char *data) {
-    if(!strlen(data) || strchr(data, '\'') == NULL)
-        return HAM_OK;
+    fcc_sqlite->sql_insert_calls++;
 
-    char buffer[HAM_BUFFER_SIZE];
-    char *begin, *end;
-
-    memset(buffer, HAM_NULL_CHAR, HAM_BUFFER_SIZE);
-
-    begin = data;
-    end = strchr(begin, '\'');
-    while(end != NULL) {
-        strncat(buffer, begin, ((end -  begin) + 1));
-        strncat(buffer, "\'", 1);
-        begin = end + 1;
-        end = strchr(begin, '\'');
-    }
-    strncat(buffer, begin, HAM_BUFFER_SIZE - ((end - begin) + 1 ));
-    /* printf("%s\n", buffer); */
-
-    strncpy(data, buffer, strlen(buffer));
     return HAM_OK;
 }
