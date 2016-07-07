@@ -54,7 +54,8 @@
 const static char *FCC_FILE_NAMES[9] = {"Unused", "AM.dat", "EN.dat", "HD.dat", "HS.dat", "CO.dat",
                                         "LA.dat", "SC.dat", "SF.dat"};
 
-const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE fcc_am(record_type TEXT NOT NULL,"
+const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE IF NOT EXISTS fcc_am("
+                                                "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_num TEXT,"
                                                 "ebf_number TEXT,"
@@ -73,7 +74,8 @@ const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE fcc_am(record_type TE
                                                 "previous_operator_class TEXT,"
                                                 "trustee_name TEXT);";
 
-const static char *HAM_SQLITE_TABLE_FCC_EN = "CREATE TABLE fcc_en(record_type TEXT NOT NULL,"
+const static char *HAM_SQLITE_TABLE_FCC_EN = "CREATE TABLE IF NOT EXISTS fcc_en("
+                                                "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
                                                 "ebf_number TEXT,"
@@ -101,7 +103,8 @@ const static char *HAM_SQLITE_TABLE_FCC_EN = "CREATE TABLE fcc_en(record_type TE
                                                 "status_code TEXT,"
                                                 "status_date DATETIME);";
 
-const static char *HAM_SQLITE_TABLE_FCC_HD = "CREATE TABLE fcc_hd(record_type TEXT NOT NULL,"
+const static char *HAM_SQLITE_TABLE_FCC_HD = "CREATE TABLE IF NOT EXISTS fcc_hd("
+                                                "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
                                                 "ebf_number TEXT,"
@@ -152,7 +155,8 @@ const static char *HAM_SQLITE_TABLE_FCC_HD = "CREATE TABLE fcc_hd(record_type TE
                                                 "alien_ruling TEXT,"
                                                 "licensee_name_change TEXT);";
 
-const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE fcc_hs(record_type TEXT NOT NULL,"
+const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE IF NOT EXISTS fcc_hs("
+                                                "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
                                                 "callsign TEXT,"
@@ -160,7 +164,8 @@ const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE fcc_hs(record_type TE
                                                 "code TEXT);";
 
 
-const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE fcc_co(record_type TEXT NOT NULL,"
+const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE IF NOT EXISTS fcc_co("
+                                                "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_num TEXT,"
                                                 "callsign TEXT,"
@@ -169,7 +174,8 @@ const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE fcc_co(record_type TE
                                                 "status_code TEXT,"
                                                 "status_date DATETIME);";
 
-const static char *HAM_SQLITE_TABLE_FCC_LA = "CREATE TABLE fcc_la(record_type TEXT NOT NULL,"
+const static char *HAM_SQLITE_TABLE_FCC_LA = "CREATE TABLE IF NOT EXISTS fcc_la("
+                                                "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "callsign TEXT,"
                                                 "attachment_code TEXT,"
@@ -178,7 +184,8 @@ const static char *HAM_SQLITE_TABLE_FCC_LA = "CREATE TABLE fcc_la(record_type TE
                                                 "attachment_filename TEXT,"
                                                 "action_performed TEXT);";
 
-const static char *HAM_SQLITE_TABLE_FCC_SC = "CREATE TABLE fcc_sc(record_type TEXT,"
+const static char *HAM_SQLITE_TABLE_FCC_SC = "CREATE TABLE IF NOT EXISTS fcc_sc("
+                                                "record_type TEXT,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
                                                 "ebf_number TEXT,"
@@ -188,7 +195,8 @@ const static char *HAM_SQLITE_TABLE_FCC_SC = "CREATE TABLE fcc_sc(record_type TE
                                                 "status_code TEXT,"
                                                 "status_date DATETIME);";
 
-const static char *HAM_SQLITE_TABLE_FCC_SF = "CREATE TABLE fcc_sf(record_type TEXT,"
+const static char *HAM_SQLITE_TABLE_FCC_SF = "CREATE TABLE IF NOT EXISTS fcc_sf("
+                                                "record_type TEXT,"
                                                 "unique_system_identifier INTEGER,"
                                                 "uls_file_number TEXT,"
                                                 "ebf_number TEXT,"
@@ -417,7 +425,7 @@ int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite);
 int ham_sqlite_terminate(ham_fcc_sqlite *fcc_sqlite);
 int ham_sqlite_sql_prepare_stmt(ham_fcc_sqlite *fcc_sqlite);
 int ham_sqlite_sql_finalize_stmt(ham_fcc_sqlite *fcc_sqlite);
-int ham_sqlite_create_file(const char *filename);
+int ham_sqlite_reset_file(const char *filename);
 int ham_sqlite_open_database_connection(sqlite3 **db, const char *filename);
 int ham_sqlite_create_tables(ham_fcc_sqlite *fcc_sqlite);
 int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const int fcc_file);
@@ -687,8 +695,6 @@ LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database) {
     ham_fcc_sqlite *fcc_sqlite;
 
     /* Conversion preparations */
-    if(ham_sqlite_create_file(HAM_SQLITE_FILE_NAME))
-        return HAM_ERROR_SQLITE_CREATE_FILE;
 
     if(ham_sqlite_init(&fcc_sqlite))
         return HAM_ERROR_SQLITE_INIT;
@@ -743,6 +749,20 @@ int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite) {
         (*fcc_sqlite) = NULL;
 
         return HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION;
+    }
+
+    if(sqlite3_exec((*fcc_sqlite)->database, "PRAGMA quick_check", NULL, NULL, NULL)) {
+        printf("Error: database file corrupt! Reseting the file...\n");
+        sqlite3_close((*fcc_sqlite)->database);
+
+        if(ham_sqlite_reset_file(HAM_SQLITE_FILE_NAME)) {
+            free((*fcc_sqlite));
+            (*fcc_sqlite) = NULL;
+
+            return HAM_ERROR_SQLITE_RESET_FILE;
+        }
+
+        ham_sqlite_open_database_connection(&(*fcc_sqlite)->database, HAM_SQLITE_FILE_NAME);
     }
 
     (*fcc_sqlite)->sql_insert_calls = 0;
@@ -851,11 +871,11 @@ int ham_sqlite_sql_finalize_stmt(ham_fcc_sqlite *fcc_sqlite) {
 
 
 /* Creates the HAM_SQLITE_FILE_NAME. If it already exists, reset it. */
-int ham_sqlite_create_file(const char *filename) {
+int ham_sqlite_reset_file(const char *filename) {
     FILE *f = fopen(filename, "w");
 
     if(f == NULL)
-        return HAM_ERROR_SQLITE_CREATE_FILE;
+        return HAM_ERROR_SQLITE_RESET_FILE;
 
     fclose(f);
 
