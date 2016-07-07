@@ -27,9 +27,6 @@
 
 #define HAM_BUFFER_SIZE 4096
 
-#define HAM_FILE_CLOSED 0
-#define HAM_FILE_OPEN 1
-
 /* FCC file identifiers */
 #define HAM_FCC_FILE_AM 1
 #define HAM_FCC_FILE_EN 2
@@ -163,7 +160,6 @@ const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE fcc_hs(record_type TE
                                                 "code TEXT);";
 
 
-/* Optional FCC tables */
 const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE fcc_co(record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_num TEXT,"
@@ -310,8 +306,6 @@ const static char *HAM_SQLITE_INSERT_FCC_HS = "INSERT INTO fcc_hs VALUES (@recor
                                                 "@log_date,"
                                                 "@code)";
 
-
-/* Optional FCC file sqlite inserts */
 const static char *HAM_SQLITE_INSERT_FCC_CO = "INSERT INTO fcc_co VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_num,"
@@ -356,19 +350,15 @@ const static char *HAM_SQLITE_INSERT_FCC_SF = "INSERT INTO fcc_sf VALUES (@recor
 struct ham_fcc_database {
     char *directory;
 
-    /* Necessary files */
+    /* FCC database files */
     FILE *am;
     FILE *en;
     FILE *hd;
     FILE *hs;
-
-    /* Optional files */
     FILE *co;
     FILE *la;
     FILE *sc;
     FILE *sf;
-
-    int include_optional;
 
     int am_open;
     int en_open;
@@ -408,8 +398,6 @@ typedef struct ham_fcc_sqlite {
     sqlite3_stmt *sc_stmt;
     sqlite3_stmt *sf_stmt;
 
-    int include_optional;
-
     unsigned int sql_insert_calls;
 } ham_fcc_sqlite;
 
@@ -421,11 +409,11 @@ int ham_parse_line_with_delimiter(char **fields, const char *line, const int num
 INT64 ham_get_lines_in_file(FILE *file);
 
 /* Internal FCC file function prototypes */
-int ham_fcc_files_exist(char *directory, const int include_optional);
+int ham_fcc_files_exist(char *directory);
 void ham_fcc_close_all(ham_fcc_database *database);
 
 /* Internal SQLite function prototypes */
-int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite, const int include_optional);
+int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite);
 int ham_sqlite_terminate(ham_fcc_sqlite *fcc_sqlite);
 int ham_sqlite_sql_prepare_stmt(ham_fcc_sqlite *fcc_sqlite);
 int ham_sqlite_sql_finalize_stmt(ham_fcc_sqlite *fcc_sqlite);
@@ -540,49 +528,50 @@ INT64 ham_get_lines_in_file(FILE *file) {
 }
 
 void ham_fcc_close_all(ham_fcc_database *database) {
-    if(database->am_open == HAM_FILE_OPEN) {
+    if(database->am_open == HAM_BOOL_YES) {
         fclose(database->am);
-        database->am_open = HAM_FILE_CLOSED;
+        database->am_open = HAM_BOOL_NO;
     }
 
-    if(database->en_open == HAM_FILE_OPEN) {
+    if(database->en_open == HAM_BOOL_YES) {
         fclose(database->en);
-        database->en_open = HAM_FILE_CLOSED;
+        database->en_open = HAM_BOOL_NO;
     }
 
-    if(database->hd_open == HAM_FILE_OPEN) {
+    if(database->hd_open == HAM_BOOL_YES) {
         fclose(database->hd);
-        database->hd_open = HAM_FILE_CLOSED;
+        database->hd_open = HAM_BOOL_NO;
     }
 
-    if(database->hs_open == HAM_FILE_OPEN) {
+    if(database->hs_open == HAM_BOOL_YES) {
         fclose(database->hs);
-        database->hs_open = HAM_FILE_CLOSED;
+        database->hs_open = HAM_BOOL_NO;
     }
 
-    if(database->co_open == HAM_FILE_OPEN) {
+    if(database->co_open == HAM_BOOL_YES) {
         fclose(database->co);
-        database->co_open = HAM_FILE_CLOSED;
+        database->co_open = HAM_BOOL_NO;
     }
 
-    if(database->la_open == HAM_FILE_OPEN) {
+    if(database->la_open == HAM_BOOL_YES) {
         fclose(database->la);
-        database->la_open = HAM_FILE_CLOSED;
+        database->la_open = HAM_BOOL_NO;
     }
 
-    if(database->sc_open == HAM_FILE_OPEN) {
+    if(database->sc_open == HAM_BOOL_YES) {
         fclose(database->sc);
-        database->sc_open = HAM_FILE_CLOSED;
+        database->sc_open = HAM_BOOL_NO;
     }
 
-    if(database->sf_open == HAM_FILE_OPEN) {
+    if(database->sf_open == HAM_BOOL_YES) {
         fclose(database->sf);
-        database->sf_open = HAM_FILE_CLOSED;
+        database->sf_open = HAM_BOOL_NO;
     }
-
 }
 
-LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database, const int include_optional) {
+LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database) {
+    int filesopen = 0;
+
     (*database) = malloc(sizeof(ham_fcc_database));
     if((*database) == NULL)
         return HAM_ERROR_MALLOC_FAIL;
@@ -593,106 +582,94 @@ LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database, const int 
         return HAM_ERROR_MALLOC_FAIL;
     }
 
-    /* Default to not include optional files */
-    (*database)->include_optional = include_optional;
-
     /* Initialize the open indicators to closed */
-    (*database)->am_open = HAM_FILE_CLOSED;
-    (*database)->en_open = HAM_FILE_CLOSED;
-    (*database)->hd_open = HAM_FILE_CLOSED;
-    (*database)->hs_open = HAM_FILE_CLOSED;
-    (*database)->co_open = HAM_FILE_CLOSED;
-    (*database)->la_open = HAM_FILE_CLOSED;
-    (*database)->sc_open = HAM_FILE_CLOSED;
-    (*database)->sf_open = HAM_FILE_CLOSED;
+    (*database)->am_open = HAM_BOOL_NO;
+    (*database)->en_open = HAM_BOOL_NO;
+    (*database)->hd_open = HAM_BOOL_NO;
+    (*database)->hs_open = HAM_BOOL_NO;
+    (*database)->co_open = HAM_BOOL_NO;
+    (*database)->la_open = HAM_BOOL_NO;
+    (*database)->sc_open = HAM_BOOL_NO;
+    (*database)->sf_open = HAM_BOOL_NO;
 
     /* Open all FCC files */
     (*database)->am = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_AM], "r");
-    assert((*database)->am != NULL);
-    if((*database)->am == NULL) {
-        ham_fcc_terminate(database);
-        return HAM_ERROR_OPEN_FILE;
+    if((*database)->am != NULL) {
+        (*database)->am_open = HAM_BOOL_YES;
+        (*database)->fcc_lengths->am_length = ham_get_lines_in_file((*database)->am);
+        filesopen++;
     }
-    (*database)->am_open = HAM_FILE_OPEN;
-    (*database)->fcc_lengths->am_length = ham_get_lines_in_file((*database)->am);
 
     (*database)->en = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_EN], "r");
-    assert((*database)->en != NULL);
-    if((*database)->en == NULL) {
-        ham_fcc_terminate(database);
-        return HAM_ERROR_OPEN_FILE;
+    if((*database)->en != NULL) {
+        (*database)->en_open = HAM_BOOL_YES;
+        (*database)->fcc_lengths->en_length = ham_get_lines_in_file((*database)->en);
+        filesopen++;
     }
-    (*database)->en_open = HAM_FILE_OPEN;
-    (*database)->fcc_lengths->en_length = ham_get_lines_in_file((*database)->en);
+
 
     (*database)->hd = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_HD], "r");
-    assert((*database)->hd != NULL);
-    if((*database)->hd == NULL) {
-        ham_fcc_terminate(database);
-        return HAM_ERROR_OPEN_FILE;
+    if((*database)->hd != NULL) {
+        (*database)->hd_open = HAM_BOOL_YES;
+        (*database)->fcc_lengths->hd_length = ham_get_lines_in_file((*database)->hd);
+        filesopen++;
     }
-    (*database)->hd_open = HAM_FILE_OPEN;
-    (*database)->fcc_lengths->hd_length = ham_get_lines_in_file((*database)->hd);
 
     (*database)->hs = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_HS], "r");
-    assert((*database)->hs != NULL);
-    if((*database)->hs == NULL) {
-        ham_fcc_terminate(database);
-        return HAM_ERROR_OPEN_FILE;
+    if((*database)->hs != NULL) {
+        (*database)->hs_open = HAM_BOOL_YES;
+        (*database)->fcc_lengths->hs_length = ham_get_lines_in_file((*database)->hs);
+        filesopen++;
     }
-    (*database)->hs_open = HAM_FILE_OPEN;
-    (*database)->fcc_lengths->hs_length = ham_get_lines_in_file((*database)->hs);
 
-    /* Optional files */
-    if(include_optional) {
-
-        (*database)->co = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_CO], "r");
-        if((*database)->co == NULL) {
-            ham_fcc_terminate(database);
-            return HAM_ERROR_OPEN_FILE;
-        }
-        (*database)->co_open = HAM_FILE_OPEN;
+    (*database)->co = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_CO], "r");
+    if((*database)->co != NULL) {
+        (*database)->co_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->co_length = ham_get_lines_in_file((*database)->co);
+        filesopen++;
+    }
 
-        (*database)->la = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_LA], "r");
-        if((*database)->la == NULL) {
-            ham_fcc_terminate(database);
-            return HAM_ERROR_OPEN_FILE;
-        }
-        (*database)->la_open = HAM_FILE_OPEN;
+    (*database)->la = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_LA], "r");
+    if((*database)->la != NULL) {
+        (*database)->la_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->la_length = ham_get_lines_in_file((*database)->la);
+        filesopen++;
+    }
 
-        (*database)->sc = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_SC], "r");
-        if((*database)->sc == NULL) {
-            ham_fcc_terminate(database);
-            return HAM_ERROR_OPEN_FILE;
-        }
-        (*database)->sc_open = HAM_FILE_OPEN;
+    (*database)->sc = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_SC], "r");
+    if((*database)->sc != NULL) {
+        (*database)->sc_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->sc_length = ham_get_lines_in_file((*database)->sc);
+        filesopen++;
+    }
 
-        (*database)->sf = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_SF], "r");
-        if((*database)->sf == NULL) {
-            ham_fcc_terminate(database);
-            return HAM_ERROR_OPEN_FILE;
-        }
-        (*database)->sf_open = HAM_FILE_OPEN;
+    (*database)->sf = fopen(FCC_FILE_NAMES[HAM_FCC_FILE_SF], "r");
+    if((*database)->sf != NULL) {
+        (*database)->sf_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->sf_length = ham_get_lines_in_file((*database)->sf);
+        filesopen++;
+    }
+
+    if(filesopen < 1) {
+        ham_fcc_terminate(*database);
+
+        return HAM_ERROR_OPEN_FILE;
     }
 
     return HAM_OK;
 }
 
-LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database **database) {
+LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database *database) {
 
     /* Can be safely called if already freed. */
-    if(*database == NULL)
+    if(database == NULL)
         return HAM_OK;
 
-    ham_fcc_close_all(*database);
+    ham_fcc_close_all(database);
 
-    free((*database)->fcc_lengths);
-    free(*database);
-    *database = NULL;
+    free(database->fcc_lengths);
+    free(database);
+
     return HAM_OK;
 }
 
@@ -713,7 +690,7 @@ LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database) {
     if(ham_sqlite_create_file(HAM_SQLITE_FILE_NAME))
         return HAM_ERROR_SQLITE_CREATE_FILE;
 
-    if(ham_sqlite_init(&fcc_sqlite, fcc_database->include_optional))
+    if(ham_sqlite_init(&fcc_sqlite))
         return HAM_ERROR_SQLITE_INIT;
 
     if(ham_sqlite_create_tables(fcc_sqlite))
@@ -723,17 +700,29 @@ LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database) {
         return HAM_ERROR_SQLITE_PREPARE_STMT;
 
     /* Perform the conversion */
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->am, HAM_FCC_FILE_AM);
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->en, HAM_FCC_FILE_EN);
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->hd, HAM_FCC_FILE_HD);
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->hs, HAM_FCC_FILE_HS);
+    if(fcc_database->am_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->am, HAM_FCC_FILE_AM);
 
-    if(fcc_database->include_optional == HAM_BOOL_YES) {
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->co, HAM_FCC_FILE_CO);
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->la, HAM_FCC_FILE_LA);
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->sc, HAM_FCC_FILE_SC);
-    ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->sf, HAM_FCC_FILE_SF);
-    }
+    if(fcc_database->en_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->en, HAM_FCC_FILE_EN);
+
+    if(fcc_database->hd_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->hd, HAM_FCC_FILE_HD);
+
+    if(fcc_database->hs_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->hs, HAM_FCC_FILE_HS);
+
+    if(fcc_database->co_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->co, HAM_FCC_FILE_CO);
+
+    if(fcc_database->la_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->la, HAM_FCC_FILE_LA);
+
+    if(fcc_database->sc_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->sc, HAM_FCC_FILE_SC);
+
+    if(fcc_database->sf_open == HAM_BOOL_YES)
+        ham_sqlite_fcc_convert_file(fcc_sqlite, fcc_database->sf, HAM_FCC_FILE_SF);
 
     printf("Records inserted: %u\n", fcc_sqlite->sql_insert_calls);
 
@@ -744,7 +733,7 @@ LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database) {
     return HAM_OK;
 }
 
-int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite, const int include_optional) {
+int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite) {
     (*fcc_sqlite) = malloc(sizeof(ham_fcc_sqlite));
     if((*fcc_sqlite) == NULL)
         return HAM_ERROR_SQLITE_INIT;
@@ -756,7 +745,6 @@ int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite, const int include_optional) {
         return HAM_ERROR_SQLITE_OPEN_DATABASE_CONNECTION;
     }
 
-    (*fcc_sqlite)->include_optional = include_optional;
     (*fcc_sqlite)->sql_insert_calls = 0;
 
     sqlite3_exec((*fcc_sqlite)->database, "PRAGMA syncronous = OFF", NULL, NULL, NULL);
@@ -798,22 +786,21 @@ int ham_sqlite_sql_prepare_stmt(ham_fcc_sqlite *fcc_sqlite) {
                             &fcc_sqlite->hs_stmt, NULL))
         return HAM_ERROR_SQLITE_PREPARE_STMT;
 
-    if(fcc_sqlite->include_optional == HAM_BOOL_YES) {
-        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_CO, -1,
-                                &fcc_sqlite->co_stmt, NULL))
-            return HAM_ERROR_SQLITE_PREPARE_STMT;
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_CO, -1,
+                            &fcc_sqlite->co_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
 
-        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_LA, -1,
-                                &fcc_sqlite->la_stmt, NULL))
-            return HAM_ERROR_SQLITE_PREPARE_STMT;
-        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_SC, -1,
-                                &fcc_sqlite->sc_stmt, NULL))
-            return HAM_ERROR_SQLITE_PREPARE_STMT;
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_LA, -1,
+                            &fcc_sqlite->la_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
 
-        if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_SF, -1,
-                                &fcc_sqlite->sf_stmt, NULL))
-            return HAM_ERROR_SQLITE_PREPARE_STMT;
-    }
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_SC, -1,
+                            &fcc_sqlite->sc_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
+
+    if(sqlite3_prepare_v2(fcc_sqlite->database, HAM_SQLITE_INSERT_FCC_SF, -1,
+                            &fcc_sqlite->sf_stmt, NULL))
+        return HAM_ERROR_SQLITE_PREPARE_STMT;
 
     return HAM_OK;
 }
@@ -839,28 +826,25 @@ int ham_sqlite_sql_finalize_stmt(ham_fcc_sqlite *fcc_sqlite) {
         fcc_sqlite->hs_stmt = NULL;
     }
 
-    if(fcc_sqlite->include_optional == HAM_BOOL_YES) {
-        if(fcc_sqlite->co_stmt != NULL) {
-            sqlite3_finalize(fcc_sqlite->co_stmt);
-            fcc_sqlite->co_stmt = NULL;
-        }
-
-        if(fcc_sqlite->la_stmt != NULL) {
-            sqlite3_finalize(fcc_sqlite->la_stmt);
-            fcc_sqlite->la_stmt = NULL;
-        }
-
-        if(fcc_sqlite->sc_stmt != NULL) {
-            sqlite3_finalize(fcc_sqlite->sc_stmt);
-            fcc_sqlite->sc_stmt = NULL;
-        }
-
-        if(fcc_sqlite->sf_stmt != NULL) {
-            sqlite3_finalize(fcc_sqlite->sf_stmt);
-            fcc_sqlite->sf_stmt = NULL;
-        }
+    if(fcc_sqlite->co_stmt != NULL) {
+        sqlite3_finalize(fcc_sqlite->co_stmt);
+        fcc_sqlite->co_stmt = NULL;
     }
 
+    if(fcc_sqlite->la_stmt != NULL) {
+        sqlite3_finalize(fcc_sqlite->la_stmt);
+        fcc_sqlite->la_stmt = NULL;
+    }
+
+    if(fcc_sqlite->sc_stmt != NULL) {
+        sqlite3_finalize(fcc_sqlite->sc_stmt);
+        fcc_sqlite->sc_stmt = NULL;
+    }
+
+    if(fcc_sqlite->sf_stmt != NULL) {
+        sqlite3_finalize(fcc_sqlite->sf_stmt);
+        fcc_sqlite->sf_stmt = NULL;
+    }
 
     return HAM_OK;
 }
@@ -902,20 +886,17 @@ int ham_sqlite_create_tables(ham_fcc_sqlite *fcc_sqlite) {
     if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_HS, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-    /* Include optional files */
-    if(fcc_sqlite->include_optional == HAM_BOOL_YES) {
-        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_CO, NULL, NULL, NULL))
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_CO, NULL, NULL, NULL))
+    return HAM_ERROR_SQLITE_CREATE_TABLES;
+
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_LA, NULL, NULL, NULL))
         return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_LA, NULL, NULL, NULL))
-            return HAM_ERROR_SQLITE_CREATE_TABLES;
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_SC, NULL, NULL, NULL))
+        return HAM_ERROR_SQLITE_CREATE_TABLES;
 
-        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_SC, NULL, NULL, NULL))
-            return HAM_ERROR_SQLITE_CREATE_TABLES;
-
-        if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_SF, NULL, NULL, NULL))
-            return HAM_ERROR_SQLITE_CREATE_TABLES;
-    }
+    if(sqlite3_exec(fcc_sqlite->database, HAM_SQLITE_TABLE_FCC_SF, NULL, NULL, NULL))
+        return HAM_ERROR_SQLITE_CREATE_TABLES;
 
     return HAM_OK;
 }
