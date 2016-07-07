@@ -14,7 +14,6 @@
 #include "libhamdata.h"
 #include "sqlite3.h"
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -406,6 +405,15 @@ typedef struct ham_fcc_sqlite {
     sqlite3_stmt *sc_stmt;
     sqlite3_stmt *sf_stmt;
 
+    unsigned int am_line;
+    unsigned int en_line;
+    unsigned int hd_line;
+    unsigned int hs_line;
+    unsigned int co_line;
+    unsigned int la_line;
+    unsigned int sc_line;
+    unsigned int sf_line;
+
     unsigned int sql_insert_calls;
 } ham_fcc_sqlite;
 
@@ -430,7 +438,7 @@ int ham_sqlite_open_database_connection(sqlite3 **db, const char *filename);
 int ham_sqlite_create_tables(ham_fcc_sqlite *fcc_sqlite);
 int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const int fcc_file);
 int ham_sqlite_insert_fields(ham_fcc_sqlite *fcc_sqlite, char **fields, const int num_fields,
-                                sqlite3_stmt *sql_stmt, const int fcc_file);
+                                sqlite3_stmt *sql_stmt, const int fcc_file, const int currentline);
 
 /*
  * Handles the memory allocation of the array of char arrays for holding the fields in the FCC
@@ -766,6 +774,14 @@ int ham_sqlite_init(ham_fcc_sqlite **fcc_sqlite) {
     }
 
     (*fcc_sqlite)->sql_insert_calls = 0;
+    (*fcc_sqlite)->am_line = 0;
+    (*fcc_sqlite)->en_line = 0;
+    (*fcc_sqlite)->hd_line = 0;
+    (*fcc_sqlite)->hs_line = 0;
+    (*fcc_sqlite)->co_line = 0;
+    (*fcc_sqlite)->la_line = 0;
+    (*fcc_sqlite)->sc_line = 0;
+    (*fcc_sqlite)->sf_line = 0;
 
     sqlite3_exec((*fcc_sqlite)->database, "PRAGMA syncronous = OFF", NULL, NULL, NULL);
     sqlite3_exec((*fcc_sqlite)->database, "PRAGMA journal_mode = MEMORY", NULL, NULL, NULL);
@@ -928,6 +944,8 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
     sqlite3_stmt *sql_stmt = NULL;
     char **fields;
 
+    int *currentline;
+
     switch (fcc_file) {
         case HAM_FCC_FILE_AM:
             error = ham_alloc_string_array(&fields, HAM_FCC_AM_FIELDS, HAM_BUFFER_SIZE);
@@ -936,6 +954,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_AM_FIELDS;
             sql_stmt = fcc_sqlite->am_stmt;
+            currentline = &fcc_sqlite->am_line;
             break;
 
         case HAM_FCC_FILE_EN:
@@ -945,6 +964,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_EN_FIELDS;
             sql_stmt = fcc_sqlite->en_stmt;
+            currentline = &fcc_sqlite->en_line;
             break;
 
         case HAM_FCC_FILE_HD:
@@ -954,6 +974,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_HD_FIELDS;
             sql_stmt = fcc_sqlite->hd_stmt;
+            currentline = &fcc_sqlite->hd_line;
             break;
 
         case HAM_FCC_FILE_HS:
@@ -963,6 +984,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_HS_FIELDS;
             sql_stmt = fcc_sqlite->hs_stmt;
+            currentline = &fcc_sqlite->hs_line;
             break;
 
         case HAM_FCC_FILE_CO:
@@ -972,6 +994,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_CO_FIELDS;
             sql_stmt = fcc_sqlite->co_stmt;
+            currentline = &fcc_sqlite->co_line;
             break;
 
         case HAM_FCC_FILE_LA:
@@ -981,6 +1004,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_LA_FIELDS;
             sql_stmt = fcc_sqlite->la_stmt;
+            currentline = &fcc_sqlite->la_line;
             break;
 
         case HAM_FCC_FILE_SC:
@@ -990,6 +1014,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
                 return HAM_ERROR_MALLOC_FAIL;
             num_fields = HAM_FCC_SC_FIELDS;
             sql_stmt = fcc_sqlite->sc_stmt;
+            currentline = &fcc_sqlite->sc_line;
             break;
 
         case HAM_FCC_FILE_SF:
@@ -999,6 +1024,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 
             num_fields = HAM_FCC_SF_FIELDS;
             sql_stmt = fcc_sqlite->sf_stmt;
+            currentline = &fcc_sqlite->sf_line;
             break;
 
         default:
@@ -1008,6 +1034,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
     memset(buffer, HAM_NULL_CHAR, HAM_BUFFER_SIZE);
 
     while(fgets(buffer, HAM_BUFFER_SIZE, data) != NULL) {
+        (*currentline)++;
 
         /*
          * fgets includes the new line at the end of the buffer; we need to replace it with a null
@@ -1021,7 +1048,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
             return HAM_ERROR_GENERIC;
         }
 
-        ham_sqlite_insert_fields(fcc_sqlite, fields, num_fields, sql_stmt, fcc_file);
+        ham_sqlite_insert_fields(fcc_sqlite, fields, num_fields, sql_stmt, fcc_file, *currentline);
 
         memset(buffer, HAM_NULL_CHAR, HAM_BUFFER_SIZE);
     }
@@ -1032,7 +1059,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
 }
 
 int ham_sqlite_insert_fields(ham_fcc_sqlite *fcc_sqlite, char **fields, const int num_fields,
-                                sqlite3_stmt *sql_stmt, const int fcc_file) {
+                                sqlite3_stmt *sql_stmt, const int fcc_file, const int currentline) {
 
     int rc = 0;
 
@@ -1044,8 +1071,8 @@ int ham_sqlite_insert_fields(ham_fcc_sqlite *fcc_sqlite, char **fields, const in
             rc = sqlite3_bind_text(sql_stmt, i+1, fields[i], -1, SQLITE_TRANSIENT);
 
         if(rc != SQLITE_OK) {
-            fprintf(stderr, "Error (%d): paramater binding failed. * %s * %d * %s *\n", rc,
-                        FCC_FILE_NAMES[fcc_file], i, fields[i]);
+            fprintf(stderr, "Error (%d): paramater binding failed. * File: %s * Index: %d\n", rc,
+                        FCC_FILE_NAMES[fcc_file], i);
 
             return HAM_ERROR_GENERIC;
         }
@@ -1058,8 +1085,8 @@ int ham_sqlite_insert_fields(ham_fcc_sqlite *fcc_sqlite, char **fields, const in
 
         if(rc != SQLITE_DONE)
         {
-            fprintf(stderr, "Error (%d): failed to insert record. * %s * %s * %s *\n", rc,
-                        FCC_FILE_NAMES[fcc_file], fields[2], fields[3]);
+            fprintf(stderr, "Error (%d): failed to insert record. * File: %s * Line: %u\n", rc,
+                        FCC_FILE_NAMES[fcc_file], currentline);
 
             return HAM_ERROR_SQLITE_INSERT;
         }
