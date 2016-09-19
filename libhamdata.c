@@ -53,7 +53,7 @@
 const static char *FCC_FILE_NAMES[9] = {"Unused", "AM.dat", "EN.dat", "HD.dat", "HS.dat", "CO.dat",
                                         "LA.dat", "SC.dat", "SF.dat"};
 
-const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE IF NOT EXISTS fcc_am("
+const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE IF NOT EXISTS fcc_amateurs ("
                                                 "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_num TEXT,"
@@ -73,7 +73,7 @@ const static char *HAM_SQLITE_TABLE_FCC_AM = "CREATE TABLE IF NOT EXISTS fcc_am(
                                                 "previous_operator_class TEXT,"
                                                 "trustee_name TEXT);";
 
-const static char *HAM_SQLITE_TABLE_FCC_EN = "CREATE TABLE IF NOT EXISTS fcc_en("
+const static char *HAM_SQLITE_TABLE_FCC_EN = "CREATE TABLE IF NOT EXISTS fcc_entities ("
                                                 "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
@@ -102,7 +102,7 @@ const static char *HAM_SQLITE_TABLE_FCC_EN = "CREATE TABLE IF NOT EXISTS fcc_en(
                                                 "status_code TEXT,"
                                                 "status_date DATETIME);";
 
-const static char *HAM_SQLITE_TABLE_FCC_HD = "CREATE TABLE IF NOT EXISTS fcc_hd("
+const static char *HAM_SQLITE_TABLE_FCC_HD = "CREATE TABLE IF NOT EXISTS fcc_headers ("
                                                 "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
@@ -154,7 +154,7 @@ const static char *HAM_SQLITE_TABLE_FCC_HD = "CREATE TABLE IF NOT EXISTS fcc_hd(
                                                 "alien_ruling TEXT,"
                                                 "licensee_name_change TEXT);";
 
-const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE IF NOT EXISTS fcc_hs("
+const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE IF NOT EXISTS fcc_histories ("
                                                 "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
@@ -163,7 +163,7 @@ const static char *HAM_SQLITE_TABLE_FCC_HS = "CREATE TABLE IF NOT EXISTS fcc_hs(
                                                 "code TEXT);";
 
 
-const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE IF NOT EXISTS fcc_co("
+const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE IF NOT EXISTS fcc_comments ("
                                                 "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_num TEXT,"
@@ -173,7 +173,7 @@ const static char *HAM_SQLITE_TABLE_FCC_CO = "CREATE TABLE IF NOT EXISTS fcc_co(
                                                 "status_code TEXT,"
                                                 "status_date DATETIME);";
 
-const static char *HAM_SQLITE_TABLE_FCC_LA = "CREATE TABLE IF NOT EXISTS fcc_la("
+const static char *HAM_SQLITE_TABLE_FCC_LA = "CREATE TABLE IF NOT EXISTS fcc_attachments ("
                                                 "record_type TEXT NOT NULL,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "callsign TEXT,"
@@ -183,7 +183,7 @@ const static char *HAM_SQLITE_TABLE_FCC_LA = "CREATE TABLE IF NOT EXISTS fcc_la(
                                                 "attachment_filename TEXT,"
                                                 "action_performed TEXT);";
 
-const static char *HAM_SQLITE_TABLE_FCC_SC = "CREATE TABLE IF NOT EXISTS fcc_sc("
+const static char *HAM_SQLITE_TABLE_FCC_SC = "CREATE TABLE IF NOT EXISTS fcc_canned_special_conditions ("
                                                 "record_type TEXT,"
                                                 "unique_system_identifier INTEGER NOT NULL,"
                                                 "uls_file_number TEXT,"
@@ -194,7 +194,7 @@ const static char *HAM_SQLITE_TABLE_FCC_SC = "CREATE TABLE IF NOT EXISTS fcc_sc(
                                                 "status_code TEXT,"
                                                 "status_date DATETIME);";
 
-const static char *HAM_SQLITE_TABLE_FCC_SF = "CREATE TABLE IF NOT EXISTS fcc_sf("
+const static char *HAM_SQLITE_TABLE_FCC_SF = "CREATE TABLE IF NOT EXISTS fcc_free_form_special_conditions ("
                                                 "record_type TEXT,"
                                                 "unique_system_identifier INTEGER,"
                                                 "uls_file_number TEXT,"
@@ -208,7 +208,7 @@ const static char *HAM_SQLITE_TABLE_FCC_SF = "CREATE TABLE IF NOT EXISTS fcc_sf(
                                                 "status_date DATETIME);";
 
 /* SQLite insert statements */
-const static char *HAM_SQLITE_INSERT_FCC_AM = "INSERT INTO fcc_am VALUES (@rec_type,"
+const static char *HAM_SQLITE_INSERT_FCC_AM = "INSERT INTO fcc_amateurs VALUES (@rec_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_num,"
                                                 "@ebf_number,"
@@ -227,7 +227,7 @@ const static char *HAM_SQLITE_INSERT_FCC_AM = "INSERT INTO fcc_am VALUES (@rec_t
                                                 "@previous_operator_class,"
                                                 "@trustee_name)";
 
-const static char *HAM_SQLITE_INSERT_FCC_EN = "INSERT INTO fcc_en VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_EN = "INSERT INTO fcc_entities VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_number,"
                                                 "@ebf_number,"
@@ -255,7 +255,7 @@ const static char *HAM_SQLITE_INSERT_FCC_EN = "INSERT INTO fcc_en VALUES (@recor
                                                 "@status_code,"
                                                 "@status_date)";
 
-const static char *HAM_SQLITE_INSERT_FCC_HD = "INSERT INTO fcc_hd VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_HD = "INSERT INTO fcc_headers VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_number,"
                                                 "@ebf_number,"
@@ -306,14 +306,14 @@ const static char *HAM_SQLITE_INSERT_FCC_HD = "INSERT INTO fcc_hd VALUES (@recor
                                                 "@alien_ruling,"
                                                 "@licensee_name_change)";
 
-const static char *HAM_SQLITE_INSERT_FCC_HS = "INSERT INTO fcc_hs VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_HS = "INSERT INTO fcc_histories VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_number,"
                                                 "@callsign,"
                                                 "@log_date,"
                                                 "@code)";
 
-const static char *HAM_SQLITE_INSERT_FCC_CO = "INSERT INTO fcc_co VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_CO = "INSERT INTO fcc_comments VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_num,"
                                                 "@callsign,"
@@ -322,7 +322,7 @@ const static char *HAM_SQLITE_INSERT_FCC_CO = "INSERT INTO fcc_co VALUES (@recor
                                                 "@status_code,"
                                                 "@status_date)";
 
-const static char *HAM_SQLITE_INSERT_FCC_LA = "INSERT INTO fcc_la VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_LA = "INSERT INTO fcc_attachments VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@callsign,"
                                                 "@attachment_code,"
@@ -331,7 +331,7 @@ const static char *HAM_SQLITE_INSERT_FCC_LA = "INSERT INTO fcc_la VALUES (@recor
                                                 "@attachment_filename,"
                                                 "@action_performed)";
 
-const static char *HAM_SQLITE_INSERT_FCC_SC = "INSERT INTO fcc_sc VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_SC = "INSERT INTO fcc_canned_special_conditions VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_number,"
                                                 "@ebf_number,"
@@ -341,7 +341,7 @@ const static char *HAM_SQLITE_INSERT_FCC_SC = "INSERT INTO fcc_sc VALUES (@recor
                                                 "@status_code,"
                                                 "@status_date)";
 
-const static char *HAM_SQLITE_INSERT_FCC_SF = "INSERT INTO fcc_sf VALUES (@record_type,"
+const static char *HAM_SQLITE_INSERT_FCC_SF = "INSERT INTO fcc_free_form_special_conditions VALUES (@record_type,"
                                                 "@unique_system_identifier,"
                                                 "@uls_file_number,"
                                                 "@ebf_number,"
