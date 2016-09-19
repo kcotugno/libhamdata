@@ -27,7 +27,7 @@ make
 Same as Linux. If you want a newer sqlite version, install it from brew and add these defines. Set the path to
 whatever your brew specifies.
 ```
-cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INCLUDE_PATH=/usr/local/opt/sqlite/include -DCMAKE_LIBRARY_PATH=/usr/local/Cellar/sqlite/3.14.2/lib/ ..
+cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INCLUDE_PATH=/usr/local/Cellar/sqlite/3.14.2/include/ -DCMAKE_LIBRARY_PATH=/usr/local/Cellar/sqlite/3.14.2/lib/ ..
 ```
 
 # Running
