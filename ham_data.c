@@ -24,9 +24,10 @@ int main (int argc, char **argv) {
 
         return 1;
     }
+    int error = ham_fcc_to_sqlite(fccdb);
 
-    if(ham_fcc_to_sqlite(fccdb))
-        printf("Conversion failed\n");
+    if(error)
+        printf("Conversion failed: %d\n", error);
 
     ham_fcc_terminate(fccdb);
     return 0;
