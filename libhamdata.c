@@ -944,7 +944,7 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
     sqlite3_stmt *sql_stmt = NULL;
     char **fields;
 
-    int *currentline;
+    unsigned int *currentline;
 
     switch (fcc_file) {
         case HAM_FCC_FILE_AM:
