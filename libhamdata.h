@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2016 kcotugno
+ * Copyright (C) 2016 Kevin Cotugno
  * All rights reserved
  *
- * Distributed under the terms of the BSD 2 Clause software license. See the
- * accompanying LICENSE file or http://www.opensource.org/licenses/BSD-2-Clause.
+ * Distributed under the terms of the MIT software license. See the
+ * accompanying LICENSE file or http://www.opensource.org/licenses/MIT.
  *
  * libhamdata: libhamdata.h
  *
