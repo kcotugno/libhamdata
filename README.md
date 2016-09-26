@@ -32,3 +32,8 @@ cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INCLUDE_PATH=/usr/local/Cellar/sqlite/3
 
 # Running
 To run the included conversion program, just unzip the FCC files into the program directory and run ham_data.
+
+# TODO
+
+This really needs to be refactored. Also add the option to set the output file name on the command line.
+
