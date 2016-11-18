@@ -1259,7 +1259,17 @@ int ham_sqlite_fcc_convert_file(ham_fcc_sqlite *fcc_sqlite, FILE *data, const in
          * fgets includes the new line at the end of the buffer; we need to replace it with a null
          * char.
          */
-        memset(strpbrk(buffer, "\n"), HAM_NULL_CHAR, 1);
+         char *endofline = strpbrk(buffer, "\n");
+         if(endofline != NULL) {
+           memset(endofline, HAM_NULL_CHAR, 1);
+         }
+
+         endofline = strpbrk(buffer, "\r");
+         if(endofline != NULL) {
+           memset(endofline, HAM_NULL_CHAR, 1);
+         }
+
+
 
         error = ham_parse_line_with_delimiter((char **)fields, buffer, num_fields, HAM_DELIMITER);
         if(error != HAM_OK) {
