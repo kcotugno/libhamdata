@@ -19,14 +19,21 @@ int main (int argc, char **argv) {
     ham_fcc_database *fccdb;
 
     char *filename = NULL;
+    char *directory = NULL;
 
     if(argc > 1) {
         filename = argv[1];
     }
 
-    if(ham_fcc_database_init(&fccdb)) {
+    if(argc > 2) {
+        directory = argv[2];
+    }
+
+    if(ham_fcc_database_init(&fccdb, directory)) {
         printf("Error: failed to open files...\n\n"
-                "Please place the FCC database files in the folder from which you run the program\n");
+               "Options paramaters:\n"
+               "1: name of output file.\n"
+               "2: directory of FCC files.\n");
 
         return 1;
     }

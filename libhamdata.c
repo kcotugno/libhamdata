@@ -629,6 +629,8 @@ int ham_parse_line_with_delimiter(char **fields, const char *line, const int num
                                     const char *delimiter);
 INT64 ham_get_lines_in_file(FILE *file);
 
+char *fcc_directory(char *directory);
+
 /* Internal FCC file function prototypes */
 int ham_fcc_files_exist(char *directory);
 void ham_fcc_close_all(ham_fcc_database *database);
@@ -760,6 +762,23 @@ INT64 ham_get_lines_in_file(FILE *file) {
     return lines;
 }
 
+char *fcc_directory(char *directory) {
+    char *result = malloc(sizeof(char) * 256);
+    memset(result, '\0', 256);
+
+    if(directory == NULL || !strcmp(directory, "."))
+        return strncpy(result, "", 249);
+
+    if(!strcmp(directory, ".."))
+#if defined(OS_WIN)
+        return strncpy(result, "..\\", 249);
+#else
+        return strncpy(result, "../", 249);
+#endif
+
+    return strncpy(result, directory, 249);
+}
+
 void ham_fcc_close_all(ham_fcc_database *database) {
     if(database->am_open == HAM_BOOL_YES) {
         fclose(database->am);
@@ -802,8 +821,9 @@ void ham_fcc_close_all(ham_fcc_database *database) {
     }
 }
 
-LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database) {
+LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database, char *directory) {
     int filesopen = 0;
+    char buffer[256] = "";
 
     (*database) = malloc(sizeof(ham_fcc_database));
     if((*database) == NULL)
@@ -814,6 +834,8 @@ LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database) {
         free(*database);
         return HAM_ERROR_MALLOC_FAIL;
     }
+
+    (*database)->directory = fcc_directory(directory);
 
     /* Initialize the open indicators to closed */
     (*database)->am_open = HAM_BOOL_NO;
@@ -826,64 +848,72 @@ LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database) {
     (*database)->sf_open = HAM_BOOL_NO;
 
     /* Open all FCC files */
-    (*database)->am = fopen(FCC_FILENAMES[HAM_FCC_FILE_AM], "r");
+
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->am = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_AM], 6), "r");
     if((*database)->am != NULL) {
         (*database)->am_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->am_length = ham_get_lines_in_file((*database)->am);
         filesopen++;
     }
 
-    (*database)->en = fopen(FCC_FILENAMES[HAM_FCC_FILE_EN], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->en = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_EN], 6), "r");
     if((*database)->en != NULL) {
         (*database)->en_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->en_length = ham_get_lines_in_file((*database)->en);
         filesopen++;
     }
 
-
-    (*database)->hd = fopen(FCC_FILENAMES[HAM_FCC_FILE_HD], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->hd = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_HD], 6), "r");
     if((*database)->hd != NULL) {
         (*database)->hd_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->hd_length = ham_get_lines_in_file((*database)->hd);
         filesopen++;
     }
 
-    (*database)->hs = fopen(FCC_FILENAMES[HAM_FCC_FILE_HS], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->hs = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_HS], 6), "r");
     if((*database)->hs != NULL) {
         (*database)->hs_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->hs_length = ham_get_lines_in_file((*database)->hs);
         filesopen++;
     }
 
-    (*database)->co = fopen(FCC_FILENAMES[HAM_FCC_FILE_CO], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->co = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_CO], 6), "r");
     if((*database)->co != NULL) {
         (*database)->co_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->co_length = ham_get_lines_in_file((*database)->co);
         filesopen++;
     }
 
-    (*database)->la = fopen(FCC_FILENAMES[HAM_FCC_FILE_LA], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->la = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_LA], 6), "r");
     if((*database)->la != NULL) {
         (*database)->la_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->la_length = ham_get_lines_in_file((*database)->la);
         filesopen++;
     }
 
-    (*database)->sc = fopen(FCC_FILENAMES[HAM_FCC_FILE_SC], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->sc = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_SC], 6), "r");
     if((*database)->sc != NULL) {
         (*database)->sc_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->sc_length = ham_get_lines_in_file((*database)->sc);
         filesopen++;
     }
 
-    (*database)->sf = fopen(FCC_FILENAMES[HAM_FCC_FILE_SF], "r");
+    strncpy(buffer, (*database)->directory, 255);
+    (*database)->sf = fopen(strncat(buffer, FCC_FILENAMES[HAM_FCC_FILE_SF], 6), "r");
     if((*database)->sf != NULL) {
         (*database)->sf_open = HAM_BOOL_YES;
         (*database)->fcc_lengths->sf_length = ham_get_lines_in_file((*database)->sf);
         filesopen++;
     }
 
-    if(filesopen < 1) {
+    if(filesopen < 8) {
         ham_fcc_terminate(*database);
 
         return HAM_ERROR_OPEN_FILE;
@@ -900,6 +930,7 @@ LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database *database) {
 
     ham_fcc_close_all(database);
 
+    free(database->directory);
     free(database->fcc_lengths);
     free(database);
 

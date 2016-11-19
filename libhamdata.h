@@ -62,7 +62,7 @@ typedef struct ham_fcc_lengths ham_fcc_lengths;
  * This should return HAM_OK. If a files fails to open, HAM_ERROR_OPEN_FILE is returned. Further,
  * no ham_fcc_database is allocated. In this case, you do not need to call ham_fcc_terminate.
  */
-LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database);
+LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database, char *directory);
 LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database *database);
 
 /* Conversion functions */
