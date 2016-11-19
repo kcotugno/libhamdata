@@ -18,13 +18,19 @@
 int main (int argc, char **argv) {
     ham_fcc_database *fccdb;
 
+    char *filename = NULL;
+
+    if(argc > 1) {
+        filename = argv[1];
+    }
+
     if(ham_fcc_database_init(&fccdb)) {
         printf("Error: failed to open files...\n\n"
                 "Please place the FCC database files in the folder from which you run the program\n");
 
         return 1;
     }
-    int error = ham_fcc_to_sqlite(fccdb);
+    int error = ham_fcc_to_sqlite(fccdb, filename);
 
     if(error)
         printf("Conversion failed: %d\n", error);

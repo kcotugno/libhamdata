@@ -66,6 +66,6 @@ LIBHAMDATA_API int ham_fcc_database_init(ham_fcc_database **database);
 LIBHAMDATA_API int ham_fcc_terminate(ham_fcc_database *database);
 
 /* Conversion functions */
-LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database);
+LIBHAMDATA_API int ham_fcc_to_sqlite(const ham_fcc_database *fcc_database, const char *filename);
 
 #endif /* _LIBHANDATA_H_ */
