@@ -654,7 +654,7 @@ int ham_sqlite_init_time(ham_fcc_sqlite *fcc_sqlite) {
     time(&rawtime);
     timeinfo = gmtime(&rawtime);
 
-    strftime(fcc_sqlite->time, 80, "%Y-%m-%d %H-%M-%S", timeinfo);
+    strftime(fcc_sqlite->time, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
 
     return HAM_OK;
 }
